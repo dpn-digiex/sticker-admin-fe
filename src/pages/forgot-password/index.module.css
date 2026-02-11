@@ -1,0 +1,86 @@
+/* LoginPage.css */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.formContainer {
+  width: 380px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.forgotPasswordText {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: start;
+  margin-bottom: 16px;
+}
+
+.description {
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.inputContainer {
+  width: 100%;
+}
+
+.inputField {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #d6d6d6;
+  border-radius: 4px;
+  transition: border-color 0.2s ease-in-out;
+  margin-bottom: 0;
+}
+
+.inputField:focus {
+  outline: none;
+  border-color: #0a66c2;
+}
+
+.nextButton {
+  width: 100%;
+  padding: 16px;
+  background-color: #0a66c2;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.nextButton:hover {
+  background-color: #004182;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.backButton {
+  text-decoration: none;
+  color: #c4c4c4;
+  padding: 4px;
+  width: 40px;
+  height: 32px;
+  border-radius: 20px;
+}
+
+.backButton:hover {
+  color: #004182;
+}
