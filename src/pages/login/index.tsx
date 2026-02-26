@@ -9,6 +9,28 @@ import useToastStore, { ToastState } from "@stores/toastStore";
 
 import styles from "./index.module.css";
 
+const TemporaryRedirectContainer = () => {
+  return (
+    <Link to={ROUTES_APP.DASHBOARD}>
+      <button
+        type="button"
+        style={{
+          background: "transparent",
+          border: "1px solid #0a66c2",
+          color: "#0a66c2",
+          padding: "8px 16px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          fontSize: "14px",
+          marginTop: "20px",
+        }}
+      >
+        Go to Dashboard
+      </button>
+    </Link>
+  );
+};
+
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -90,6 +112,7 @@ const LoginPage = () => {
           </Link>
         </div>
       </div>
+      <TemporaryRedirectContainer />
     </div>
   );
 };
