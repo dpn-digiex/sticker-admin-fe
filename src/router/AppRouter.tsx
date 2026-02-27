@@ -13,6 +13,7 @@ import CategoriesPage from "@pages/categories";
 import ErrorPage from "@pages/error";
 import ForgotPasswordPage from "@pages/forgot-password";
 import LoginPage from "@pages/login";
+import ProductListPage from "@pages/product-list";
 import RegisterPage from "@pages/register";
 import UnauthorizedPage from "@pages/unauthorized";
 import DashboardLayout from "@router/DashboardLayout";
@@ -82,7 +83,7 @@ const AppRouter = () => {
             { path: "/transactions", element: <EmptyPage /> },
             { path: "/brands", element: <EmptyPage /> },
             { path: "/products/new", element: <AddProductPage /> },
-            { path: "/products", element: <EmptyPage /> },
+            { path: "/products", element: <ProductListPage /> },
             { path: "/admins", element: <EmptyPage /> },
             { path: "/admin-roles", element: <EmptyPage /> },
             {

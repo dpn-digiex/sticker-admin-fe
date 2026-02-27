@@ -65,3 +65,8 @@ export type CreateProductBody = Omit<
 > & {
   variants?: CreateVariantInput[];
 };
+
+/** Partial product fields accepted by PUT /products/:id */
+export type UpdateProductBody = Partial<
+  Omit<Product, "id" | "viewCount" | "createdAt" | "updatedAt">
+>;

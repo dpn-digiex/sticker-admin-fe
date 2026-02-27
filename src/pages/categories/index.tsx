@@ -20,10 +20,10 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Category } from "@types";
 
 import { createCategory, fetchCategories } from "@apis/category.api";
 import useToastStore, { type ToastState } from "@stores/toastStore";
+import type { Category } from "@types";
 
 import CategoryFormDialog, {
   type CategoryFormSubmitPayload,
