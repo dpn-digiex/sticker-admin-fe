@@ -27,7 +27,11 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { fetchCategories } from "@apis/category.api";
-import { fetchProductById, updateProduct } from "@apis/product.api";
+import {
+  deleteProductAsset,
+  fetchProductById,
+  updateProduct,
+} from "@apis/product.api";
 import PresignedUploader from "@components/common/presigned-uploader";
 import { MAX_PRODUCT_IMAGES } from "@constants";
 import useToastStore, { type ToastState } from "@stores/toastStore";
@@ -81,10 +85,12 @@ export default function ProductUpdateModal({
   const queryClient = useQueryClient();
   const showToast = useToastStore((s: ToastState) => s.showToast);
   const [slugTouched, setSlugTouched] = React.useState(false);
-  /** Existing image keys/URLs from API – user can remove. */
-  const [existingImages, setExistingImages] = React.useState<string[]>([]);
+  /** Existing image keys (S3 paths) from API – user can remove via API. */
+  const [existingImageKeys, setExistingImageKeys] = React.useState<string[]>([]);
   /** New keys from presigned upload (under products/{id}/). */
   const [newImageKeys, setNewImageKeys] = React.useState<string[]>([]);
+  /** Index of image currently being deleted (for loading state). */
+  const [removingIndex, setRemovingIndex] = React.useState<number | null>(null);
 
   const { data: categories = [] } = useQuery({
     queryKey: QUERY_KEY.categories,
@@ -151,9 +157,7 @@ export default function ProductUpdateModal({
       packageDescription: product.packageDescription ?? "",
       preorderDescription: product.preorderDescription ?? "",
     });
-    setExistingImages(
-      product.images?.map(image => `${envConfig.assetBaseUrl}/${image}`) ?? []
-    );
+    setExistingImageKeys(product.images ?? []);
     setNewImageKeys([]);
     setSlugTouched(false);
   }, [product, reset]);
@@ -181,7 +185,7 @@ export default function ProductUpdateModal({
 
   const handleSave = handleSubmit(async values => {
     if (!productId) return;
-    const images = [...existingImages, ...newImageKeys];
+    const images = [...existingImageKeys, ...newImageKeys];
     await updateMutation.mutateAsync({
       id: productId,
       body: {
@@ -203,13 +207,25 @@ export default function ProductUpdateModal({
     });
   });
 
-  const removeExistingImage = (index: number) => {
-    setExistingImages(prev => prev.filter((_, i) => i !== index));
+  const removeExistingImage = async (index: number) => {
+    const key = existingImageKeys[index];
+    if (!productId || key == null) return;
+    setRemovingIndex(index);
+    try {
+      await deleteProductAsset(productId, key);
+      setExistingImageKeys(prev => prev.filter((_, i) => i !== index));
+      showToast("Image removed.", "success");
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY.product(productId) });
+    } catch {
+      showToast("Failed to remove image.", "error");
+    } finally {
+      setRemovingIndex(null);
+    }
   };
 
   const maxNewUploads = Math.max(
     0,
-    MAX_PRODUCT_IMAGES - existingImages.length - newImageKeys.length
+    MAX_PRODUCT_IMAGES - existingImageKeys.length - newImageKeys.length
   );
 
   return (
@@ -392,16 +408,16 @@ export default function ProductUpdateModal({
                     total).
                   </Typography>
 
-                  {existingImages.length > 0 && (
+                  {existingImageKeys.length > 0 && (
                     <Stack
                       direction="row"
                       flexWrap="wrap"
                       gap={1.5}
                       sx={{ mb: 2 }}
                     >
-                      {existingImages.map((src, index) => (
+                      {existingImageKeys.map((key, index) => (
                         <Box
-                          key={`existing-${index}-${src.slice(-12)}`}
+                          key={`existing-${index}-${key.slice(-12)}`}
                           sx={{
                             position: "relative",
                             width: 88,
@@ -414,17 +430,30 @@ export default function ProductUpdateModal({
                           }}
                         >
                           <img
-                            src={src}
+                            src={`${envConfig.assetBaseUrl}/${key}`}
                             alt={`Product ${index + 1}`}
                             style={{
                               width: "100%",
                               height: "100%",
                               objectFit: "cover",
+                              opacity: removingIndex === index ? 0.6 : 1,
                             }}
                           />
+                          {removingIndex === index && (
+                            <CircularProgress
+                              size={24}
+                              sx={{
+                                position: "absolute",
+                                top: "50%",
+                                left: "50%",
+                                transform: "translate(-50%, -50%)",
+                              }}
+                            />
+                          )}
                           <IconButton
                             size="small"
                             onClick={() => removeExistingImage(index)}
+                            disabled={removingIndex !== null}
                             sx={{
                               position: "absolute",
                               top: 4,

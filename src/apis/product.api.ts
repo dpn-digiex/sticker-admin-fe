@@ -38,3 +38,12 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<void> {
   await axiosPrivate.delete(`/products/${id}`);
 }
+
+export async function deleteProductAsset(
+  productId: string,
+  assetPath: string
+): Promise<void> {
+  await axiosPrivate.delete(`/products/${productId}/assets`, {
+    data: { path: assetPath },
+  });
+}
