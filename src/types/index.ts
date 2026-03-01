@@ -4,6 +4,8 @@ export type Category = {
   slug: string;
   description?: string;
   images?: string[];
+  /** Number of products in this category (from list API). */
+  productCount?: number;
 };
 
 export interface AuthData {
