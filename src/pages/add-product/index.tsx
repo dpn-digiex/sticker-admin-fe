@@ -66,6 +66,8 @@ const productSchema = z
     sizeDescription: z.string().optional(),
     packageDescription: z.string().optional(),
     preorderDescription: z.string().optional(),
+    preorderStartDate: z.string().optional().default(""),
+    preorderEndDate: z.string().optional().default(""),
     hasVariants: z.boolean().default(false),
     variants: z.array(variantSchema).default([]),
   })
@@ -85,6 +87,43 @@ const productSchema = z
           path: ["variants"],
           message: "Remove variants when using Single product.",
         });
+      }
+    }
+    if (val.productType === "preorder") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().slice(0, 10);
+      if (!val.preorderStartDate?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["preorderStartDate"],
+          message: "Start date is required for preorder.",
+        });
+      } else if (val.preorderStartDate < todayStr) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["preorderStartDate"],
+          message: "Start date must be today or later.",
+        });
+      }
+      if (!val.preorderEndDate?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["preorderEndDate"],
+          message: "End date is required for preorder.",
+        });
+      } else if (val.preorderStartDate) {
+        const start = new Date(val.preorderStartDate + "T00:00:00");
+        const minEnd = new Date(start);
+        minEnd.setDate(minEnd.getDate() + 1);
+        const minEndStr = minEnd.toISOString().slice(0, 10);
+        if (val.preorderEndDate < minEndStr) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["preorderEndDate"],
+            message: "End date must be at least 1 day after start date.",
+          });
+        }
       }
     }
   });
@@ -117,6 +156,8 @@ const defaultFormValues: ProductFormValues = {
   sizeDescription: "",
   packageDescription: "",
   preorderDescription: "",
+  preorderStartDate: "",
+  preorderEndDate: "",
   hasVariants: false,
   variants: [],
 };
@@ -160,6 +201,8 @@ export default function AddProductPage() {
   const name = watch("name");
   const slug = watch("slug");
   const hasVariants = watch("hasVariants");
+  const productType = watch("productType");
+  const preorderStartDate = watch("preorderStartDate");
 
   React.useEffect(() => {
     if (!slugTouched && name) {
@@ -242,6 +285,17 @@ export default function AddProductPage() {
           }))
         : [];
 
+      // Preorder: start_date = 00:00:00 of selected day, end_date = 23:59:59.999 of selected day (full day; when same day, end is 24h). ISO format for Postgres.
+      const preorderPayload =
+        values.productType === "preorder" &&
+        values.preorderStartDate &&
+        values.preorderEndDate
+          ? {
+              start_date: `${values.preorderStartDate}T00:00:00.000Z`,
+              end_date: `${values.preorderEndDate}T23:59:59.999Z`,
+            }
+          : null;
+
       const payload = {
         name: values.name,
         slug: values.slug,
@@ -257,7 +311,7 @@ export default function AddProductPage() {
         packageDescription: values.packageDescription || null,
         preorderDescription: values.preorderDescription || null,
         images: imageKeys,
-        preorder: null,
+        preorder: preorderPayload,
         variants: variantsPayload,
       };
 
@@ -342,15 +396,33 @@ export default function AddProductPage() {
                     <Select
                       label="Product type"
                       value={watch("productType")}
-                      onChange={e =>
-                        setValue(
-                          "productType",
-                          e.target.value as "in_stock" | "preorder",
-                          {
+                      onChange={e => {
+                        const next = e.target.value as "in_stock" | "preorder";
+                        setValue("productType", next, { shouldValidate: true });
+                        if (next === "in_stock") {
+                          setValue("preorderStartDate", "", {
                             shouldValidate: true,
-                          }
-                        )
-                      }
+                          });
+                          setValue("preorderEndDate", "", {
+                            shouldValidate: true,
+                          });
+                        } else {
+                          const tomorrow = new Date();
+                          tomorrow.setDate(tomorrow.getDate() + 1);
+                          const dayAfter = new Date(tomorrow);
+                          dayAfter.setDate(dayAfter.getDate() + 1);
+                          setValue(
+                            "preorderStartDate",
+                            tomorrow.toISOString().slice(0, 10),
+                            { shouldValidate: true }
+                          );
+                          setValue(
+                            "preorderEndDate",
+                            dayAfter.toISOString().slice(0, 10),
+                            { shouldValidate: true }
+                          );
+                        }
+                      }}
                     >
                       <MenuItem value="in_stock">In stock</MenuItem>
                       <MenuItem value="preorder">Preorder</MenuItem>
@@ -360,6 +432,82 @@ export default function AddProductPage() {
               </Stack>
             </CardContent>
           </Card>
+
+          {/* Pre-order time — only when product type is preorder */}
+          {productType === "preorder" && (
+            <Card variant="outlined" sx={{ borderRadius: 2 }}>
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
+                  Pre-order time
+                </Typography>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={2}
+                  alignItems="flex-start"
+                >
+                  <TextField
+                    label="Start date"
+                    type="date"
+                    value={watch("preorderStartDate")}
+                    onChange={e => {
+                      const v = e.target.value;
+                      setValue("preorderStartDate", v, {
+                        shouldValidate: true,
+                      });
+                      const end = watch("preorderEndDate");
+                      if (end && v) {
+                        const start = new Date(v + "T00:00:00");
+                        const minEnd = new Date(start);
+                        minEnd.setDate(minEnd.getDate() + 1);
+                        const minEndStr = minEnd.toISOString().slice(0, 10);
+                        if (end < minEndStr) {
+                          setValue("preorderEndDate", minEndStr, {
+                            shouldValidate: true,
+                          });
+                        }
+                      }
+                    }}
+                    error={!!errors.preorderStartDate}
+                    helperText={errors.preorderStartDate?.message}
+                    fullWidth
+                    slotProps={{
+                      htmlInput: {
+                        min: new Date().toISOString().slice(0, 10),
+                      },
+                    }}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <TextField
+                    label="End date"
+                    type="date"
+                    value={watch("preorderEndDate")}
+                    onChange={e =>
+                      setValue("preorderEndDate", e.target.value, {
+                        shouldValidate: true,
+                      })
+                    }
+                    error={!!errors.preorderEndDate}
+                    helperText={errors.preorderEndDate?.message}
+                    fullWidth
+                    slotProps={{
+                      htmlInput: {
+                        min: preorderStartDate
+                          ? (() => {
+                              const start = new Date(
+                                preorderStartDate + "T00:00:00"
+                              );
+                              start.setDate(start.getDate() + 1);
+                              return start.toISOString().slice(0, 10);
+                            })()
+                          : undefined,
+                      },
+                    }}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Stack>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Pricing, stock & variants */}
           <Card variant="outlined" sx={{ borderRadius: 2 }}>

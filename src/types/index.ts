@@ -4,6 +4,8 @@ export type Category = {
   slug: string;
   description?: string;
   images?: string[];
+  /** Number of products in this category (from list API). */
+  productCount?: number;
 };
 
 export interface AuthData {
@@ -65,3 +67,8 @@ export type CreateProductBody = Omit<
 > & {
   variants?: CreateVariantInput[];
 };
+
+/** Partial product fields accepted by PUT /products/:id */
+export type UpdateProductBody = Partial<
+  Omit<Product, "id" | "viewCount" | "createdAt" | "updatedAt">
+>;

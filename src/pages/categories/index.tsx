@@ -1,7 +1,8 @@
 import * as React from "react";
 
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import MoreVertRoundedIcon from "@mui/icons-material/MoreVertRounded";
+import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import {
   Box,
   Button,
@@ -16,18 +17,23 @@ import {
   TableCell,
   TableBody,
   IconButton,
-  Chip,
   CircularProgress,
 } from "@mui/material";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Category } from "@types";
 
-import { createCategory, fetchCategories } from "@apis/category.api";
+import {
+  createCategory,
+  deleteCategory,
+  fetchCategories,
+  updateCategory,
+} from "@apis/category.api";
 import useToastStore, { type ToastState } from "@stores/toastStore";
+import type { Category } from "@types";
 
 import CategoryFormDialog, {
   type CategoryFormSubmitPayload,
-} from "./components/CategoryFormDialog.tsx";
+} from "./components/CategoryFormDialog";
+import DeleteConfirmDialog from "./components/DeleteConfirmDialog";
 
 const QUERY_KEY = {
   categories: ["categories"] as const,
@@ -39,6 +45,12 @@ export default function CategoriesPage() {
 
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
+  const [categoryToDelete, setCategoryToDelete] = React.useState<Category | null>(
+    null
+  );
+  const [categoryToEdit, setCategoryToEdit] = React.useState<Category | null>(
+    null
+  );
 
   const {
     data,
@@ -61,6 +73,39 @@ export default function CategoriesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY.categories });
       showToast("Category created successfully.", "success");
+      setOpen(false);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: CategoryFormSubmitPayload;
+    }) =>
+      updateCategory(id, {
+        name: payload.name,
+        slug: payload.slug,
+        description: payload.description || undefined,
+        images: payload.images ?? [],
+        existingImageKeys: payload.existingImageKeys,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY.categories });
+      showToast("Category updated successfully.", "success");
+      setOpen(false);
+      setCategoryToEdit(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY.categories });
+      showToast("Category deleted successfully.", "success");
+      setCategoryToDelete(null);
     },
   });
 
@@ -71,13 +116,28 @@ export default function CategoriesPage() {
 
     return list.filter(c => {
       const name = (c.name || "").toLowerCase();
-      const slug = (c.slug || "").toLowerCase();
-      return name.includes(keyword) || slug.includes(keyword);
+      return name.includes(keyword);
     });
   }, [data, query]);
 
-  const handleCreate = async (payload: CategoryFormSubmitPayload) => {
-    await createMutation.mutateAsync(payload);
+  const handleFormSubmit = async (
+    payload: CategoryFormSubmitPayload,
+    categoryId?: string
+  ) => {
+    if (categoryId) {
+      await updateMutation.mutateAsync({ id: categoryId, payload });
+    } else {
+      await createMutation.mutateAsync(payload);
+    }
+  };
+
+  const handleEdit = (category: Category) => {
+    setCategoryToEdit(category);
+    setOpen(true);
+  };
+
+  const handleDelete = (category: Category) => {
+    setCategoryToDelete(category);
   };
 
   return (
@@ -99,15 +159,18 @@ export default function CategoriesPage() {
         <Stack direction="row" spacing={1.5} alignItems="center">
           <TextField
             size="small"
-            placeholder="Search by name or slug..."
+            placeholder="Search by name..."
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
           <Button
             variant="contained"
             startIcon={<AddRoundedIcon />}
-            onClick={() => setOpen(true)}
-            disabled={createMutation.isPending}
+            onClick={() => {
+              setCategoryToEdit(null);
+              setOpen(true);
+            }}
+            disabled={createMutation.isPending || updateMutation.isPending}
           >
             Add Category
           </Button>
@@ -130,8 +193,10 @@ export default function CategoriesPage() {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 700 }}>Name</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Slug</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Description</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }} align="right">
+                    Products
+                  </TableCell>
                   <TableCell sx={{ fontWeight: 700 }} align="right">
                     Images
                   </TableCell>
@@ -148,10 +213,6 @@ export default function CategoriesPage() {
                       <Typography sx={{ fontWeight: 650 }}>{c.name}</Typography>
                     </TableCell>
 
-                    <TableCell>
-                      <Chip label={c.slug} size="small" variant="outlined" />
-                    </TableCell>
-
                     <TableCell sx={{ maxWidth: 520 }}>
                       <Typography variant="body2" color="text.secondary" noWrap>
                         {c.description || "-"}
@@ -159,13 +220,35 @@ export default function CategoriesPage() {
                     </TableCell>
 
                     <TableCell align="right">
+                      {c.productCount ?? 0}
+                    </TableCell>
+
+                    <TableCell align="right">
                       {(c.images?.length ?? 0).toString()}
                     </TableCell>
 
                     <TableCell align="right">
-                      <IconButton size="small" aria-label="More">
-                        <MoreVertRoundedIcon />
-                      </IconButton>
+                      <Stack
+                        direction="row"
+                        spacing={0.5}
+                        justifyContent="flex-end"
+                      >
+                        <IconButton
+                          size="small"
+                          aria-label="Update category"
+                          onClick={() => handleEdit(c)}
+                        >
+                          <EditRoundedIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          aria-label="Delete category"
+                          color="error"
+                          onClick={() => handleDelete(c)}
+                        >
+                          <DeleteRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -187,8 +270,28 @@ export default function CategoriesPage() {
 
       <CategoryFormDialog
         open={open}
-        onClose={() => setOpen(false)}
-        onSubmit={handleCreate}
+        onClose={() => {
+          setOpen(false);
+          setCategoryToEdit(null);
+        }}
+        initialCategory={categoryToEdit}
+        onSubmit={handleFormSubmit}
+      />
+
+      <DeleteConfirmDialog
+        open={!!categoryToDelete}
+        title="Delete category"
+        message={
+          categoryToDelete
+            ? `Are you sure you want to delete "${categoryToDelete.name}"? This action cannot be undone.`
+            : undefined
+        }
+        onConfirm={async () => {
+          if (categoryToDelete)
+            await deleteMutation.mutateAsync(categoryToDelete.id);
+        }}
+        onCancel={() => setCategoryToDelete(null)}
+        isDeleting={deleteMutation.isPending}
       />
     </Box>
   );
