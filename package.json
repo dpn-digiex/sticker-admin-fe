@@ -1,7 +1,9 @@
 {
-  "name": "react-minimal-boilerplate",
+  "name": "sticker-web-admin",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "author": "Phong Nguyen",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +11,9 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "preview": "vite preview",
-    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\""
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "agent:skills": "npx skills add https://github.com/vercel-labs/agent-skills --skill vercel-react-best-practices",
+    "postinstall": "pnpm agent:skills"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
