@@ -1,4 +1,5 @@
 import { axiosPrivate } from "@apis/clientAxios";
+import { API_ENDPOINTS } from "@constants/index";
 import { getS3UploadErrorMessage } from "@utils/index";
 
 export type PresignedUploadPayload = {
@@ -21,7 +22,7 @@ export async function getPresignedUploadUrl(
     uploadUrl?: string;
     key?: string;
     expiresIn?: number;
-  }>("/assets/presigned-upload", payload);
+  }>(API_ENDPOINTS.PRESIGNED_UPLOAD, payload);
   const data = res.data?.data ?? res.data;
   return {
     uploadUrl: data.uploadUrl || "",

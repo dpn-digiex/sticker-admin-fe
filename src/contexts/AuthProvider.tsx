@@ -1,5 +1,6 @@
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 
+import { getStoredAuth } from "@apis/authStorage";
 import { ROLES_NAME } from "@constants/index";
 import { AuthData } from "types/index";
 
@@ -12,28 +13,47 @@ export interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
+/** Map backend role (owner | customer) to frontend roles for RoleBasedRoute. */
+function toAuthData(stored: {
+  accessToken: string;
+  refreshToken: string;
+  user: { id: string; email: string; name: string; role: "owner" | "customer" };
+}): AuthData {
+  const roles = stored.user.role === "owner" ? [ROLES_NAME.ADMIN] : ["user"];
+  return {
+    roles,
+    accessToken: stored.accessToken,
+    refreshToken: stored.refreshToken,
+    user: {
+      id: stored.user.id,
+      name: stored.user.name,
+      email: stored.user.email,
+    },
+  };
+}
+
 interface AuthProviderProps {
   children: ReactNode;
 }
-
-const MOCK_AUTH_DATA: AuthData = {
-  roles: [ROLES_NAME.ADMIN],
-  user: {
-    id: "1",
-    name: "Admin",
-    email: "admin@gmail.com",
-  },
-  accessToken: "1234567890",
-  refreshToken: "1234567890",
-};
 
 const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [auth, setAuth] = useState<AuthData>({} as AuthData);
 
   useEffect(() => {
-    setAuth(MOCK_AUTH_DATA);
+    const stored = getStoredAuth();
+    if (stored) {
+      setAuth(toAuthData(stored));
+    }
     setIsCheckingAuth(false);
+  }, []);
+
+  useEffect(() => {
+    const handleLogout = () => {
+      setAuth({} as AuthData);
+    };
+    window.addEventListener("auth:logout", handleLogout);
+    return () => window.removeEventListener("auth:logout", handleLogout);
   }, []);
 
   return (

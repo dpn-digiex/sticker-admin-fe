@@ -12,9 +12,15 @@ export const ROUTES_APP = {
   CATEGORIES: "/categories",
 };
 
-export const USER_API = {
-  SIGNIN: "/auth/signin",
-  LOGOUT: "/auth/logout",
+export const API_ENDPOINTS = {
+  PRESIGNED_UPLOAD: "/assets/presigned-upload",
+  LOGIN: "/auth/login",
+  REGISTER: "/auth/register",
+  REFRESH: "/auth/refresh",
+  ME: "/auth/me",
+  CATEGORIES: "/categories",
+  CATEGORIES_CREATE: "/categories/create",
+  PRODUCTS: "/products",
 };
 
 // Roles id defined in database

@@ -81,7 +81,6 @@ const AppRouter = () => {
             { path: "/coupons", element: <EmptyPage /> },
             { path: ROUTES_APP.CATEGORIES, element: <CategoriesPage /> },
             { path: "/transactions", element: <EmptyPage /> },
-            { path: "/brands", element: <EmptyPage /> },
             { path: "/products/new", element: <AddProductPage /> },
             { path: "/products", element: <ProductListPage /> },
             { path: "/admins", element: <EmptyPage /> },

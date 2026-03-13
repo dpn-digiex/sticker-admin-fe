@@ -10,7 +10,6 @@ import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import ShoppingBagOutlinedIcon from "@mui/icons-material/ShoppingBagOutlined";
-import StorefrontOutlinedIcon from "@mui/icons-material/StorefrontOutlined";
 
 export type NavItem = {
   label: string;
@@ -49,7 +48,6 @@ export const NAV_SECTIONS: NavSection[] = [
         to: "/transactions",
         icon: <ReceiptLongOutlinedIcon />,
       },
-      { label: "Brand", to: "/brands", icon: <StorefrontOutlinedIcon /> },
     ],
   },
   {
