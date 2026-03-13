@@ -15,7 +15,6 @@ function titleFromPath(pathname: string) {
   if (pathname.startsWith("/coupons")) return "Coupon Code";
   if (pathname.startsWith("/categories")) return "Categories";
   if (pathname.startsWith("/transactions")) return "Transaction";
-  if (pathname.startsWith("/brands")) return "Brand";
   if (pathname.startsWith("/products/new")) return "Add Products";
   if (pathname.startsWith("/products")) return "Product List";
   if (pathname.startsWith("/admins")) return "Manage Admins";

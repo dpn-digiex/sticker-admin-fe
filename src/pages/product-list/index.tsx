@@ -75,7 +75,7 @@ export default function ProductListPage() {
   });
 
   const {
-    data: products = [],
+    data: response,
     isLoading: isLoadingProducts,
     isError: isProductsError,
   } = useQuery({
@@ -95,6 +95,7 @@ export default function ProductListPage() {
     staleTime: 15_000,
   });
 
+  const products = response?.data ?? ([] as Product[]);
   const hasNextPage = products.length >= rowsPerPage;
 
   const handleChangePage = (_: unknown, newPage: number) => {
@@ -223,7 +224,7 @@ export default function ProductListPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {(products as Product[]).map(p => (
+                  {products.map(p => (
                     <TableRow key={p.id} hover>
                       <TableCell>
                         <Typography sx={{ fontWeight: 650 }}>
@@ -280,7 +281,7 @@ export default function ProductListPage() {
                     </TableRow>
                   ))}
 
-                  {(products as Product[]).length === 0 && (
+                  {products.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7}>
                         <Typography color="text.secondary">
@@ -298,7 +299,7 @@ export default function ProductListPage() {
                 count={
                   hasNextPage
                     ? (page + 2) * rowsPerPage
-                    : page * rowsPerPage + (products as Product[]).length
+                    : page * rowsPerPage + products.length
                 }
                 page={page}
                 onPageChange={handleChangePage}
@@ -308,8 +309,7 @@ export default function ProductListPage() {
                 labelRowsPerPage="Rows per page:"
                 labelDisplayedRows={({ from, to }) => `${from}–${to}`}
                 nextIconButtonProps={{
-                  disabled:
-                    !hasNextPage || (products as Product[]).length === 0,
+                  disabled: !hasNextPage || products.length === 0,
                 }}
               />
             </>
@@ -326,7 +326,8 @@ export default function ProductListPage() {
             : undefined
         }
         onConfirm={async () => {
-          if (productToDelete) await deleteMutation.mutateAsync(productToDelete.id);
+          if (productToDelete)
+            await deleteMutation.mutateAsync(productToDelete.id);
         }}
         onCancel={() => setProductToDelete(null)}
         isDeleting={deleteMutation.isPending}
